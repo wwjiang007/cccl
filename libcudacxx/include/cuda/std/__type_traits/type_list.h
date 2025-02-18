@@ -336,28 +336,45 @@ using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_lis
 
 namespace __detail
 {
-template <template <class...> class _Fn, class... _Ts>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
-  -> __type_list<_Ts...>;
+template <class _Ret, class... _As>
+using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_As...);
 
-template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
-  -> __type_list<integral_constant<_Ty, _Us>...>;
+template <class _List>
+extern __undefined<_List> __as_type_list;
 
-template <class _Ret, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
-  -> __type_list<_Args...>;
+template <template <class...> class _Cy, class... _Ts>
+extern __fn_t<__type_list<_Ts...>>* __as_type_list<_Cy<_Ts...>>;
+
+template <template <class _Ty, _Ty...> class _Cy, class _Ty, _Ty... _Us>
+extern __fn_t<__type_list<integral_constant<_Ty, _Us>...>>* __as_type_list<_Cy<_Ty, _Us...>>;
+
+template <class _Ret, class... _As>
+extern __fn_t<__type_list<_Ret, _As...>>* __as_type_list<_Ret(_As...)>;
 } // namespace __detail
 
-//! \brief Given a type that is a specialization of a class template, return a
-//! type list of the template arguments.
+//! \brief Given a type that is can be interpreted as a type list, return its
+//! type list interpretation. Types that can be interpreted as a type
+//! list are of the following forms:
+//!
+//! \li `C<Ts...>`, for any class template `C` and types `Ts...`.
+//! \li `C<T, T... Vs>`, for any class template `C`, type `T` and values `Vs...`.
+//!     The resulting type is `_Fn<integral_constant<T, Vs>...>`.
+//! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
+//!     `_Fn<R, As...>`.
 template <class _List>
-using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
+using __as_type_list = decltype(__detail::__as_type_list<_List>());
 
-//! \brief Given a type that is a specialization of a class template and a
-//! meta-callable, invoke the callable with the template arguments.
+//! \brief Given a class or alias template \c _Fn and a specialization of
+//! \c __type_list, instantiate \c _Fn with the types in the list.
+template <template <class...> class _Fn, class _List>
+using __type_apply_q = __type_call<_List, __type_quote<_Fn>>;
+
+//! \brief Given a meta-callable \c _Fn and a specialization of
+//! \c __type_list, call \c _Fn with the types in the list.
+//!
+//! \see __type_apply_q
 template <class _Fn, class _List>
-using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
+using __type_apply = __type_call<_List, _Fn>;
 
 namespace __detail
 {
