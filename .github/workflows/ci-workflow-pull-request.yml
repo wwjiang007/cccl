@@ -201,6 +201,8 @@ jobs:
       contents: read
       pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
+    with:
+      override_cccl_tag: "branch/2.8.x"
 
   build-matx:
     name: Build MatX

@@ -64,8 +64,19 @@ _create_rapids_cmake_override_json() {
         rapids_cmake_upstream="$(yq '.x-git-defaults.upstream' /opt/rapids-build-utils/manifest.yaml)";
     fi
 
+    # Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+    if test -n "${CCCL_TAG-}"; then
+        # If CCCL_TAG is defined, fetch it to the local checkout
+        git fetch --depth 1 origin "${CCCL_TAG}";
+        cccl_sha="$(git -C "${HOME}/cccl" rev-parse FETCH_HEAD)";
+    else
+        cccl_sha="$(git -C "${HOME}/cccl" rev-parse HEAD)";
+    fi
+    echo "CCCL_TAG: ${CCCL_TAG-HEAD}";
+    echo "cccl_sha: ${cccl_sha}";
+
     curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_tag}/rapids-cmake/cpm/versions.json" \
-  | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"$(git -C "${HOME}/cccl" rev-parse HEAD)\", \"always_download\": true}" \
+  | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"${cccl_sha}\", \"always_download\": true}" \
   | tee ~/rapids-cmake-override-versions.json;
 
     # Define default CMake args for each repo
